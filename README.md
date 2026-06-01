@@ -6,6 +6,9 @@ An interactive educational website helping students learn about the Indian Natio
 
 This is a **government-education style web application** designed for students, teachers, and general learners. It provides an immersive way to explore the INC timeline from its founding in 1885 to Indian independence in 1947.
 
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/1730c53b-6795-411b-8ed9-1723b6f59cf5" />
+
+
 ### Key Features
 
 **Timeline Navigation**
