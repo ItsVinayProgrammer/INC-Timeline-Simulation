@@ -183,7 +183,7 @@ Quiz generation is in `quiz.js`. Modify `makeQuestion()` to add custom question 
 - Screen reader friendly
 
 ## Known Limitations
-- Improving Dark mode theme
+- Dark mode theme optimizations are still in progress.
 - Map requires JavaScript (no fallback for JS-disabled browsers)
 - Geographic data only covers India's current borders
 - Historical data focuses on major sessions (95 recorded sessions)
