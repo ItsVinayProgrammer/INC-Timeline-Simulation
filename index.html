@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Indian National Congress — Timeline 1885–1947</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <div id="loading-state" class="loading-state" role="status" aria-live="polite">
+      <div class="loading-card">
+        <p class="loading-kicker">Indian National Congress Timeline</p>
+        <h1>Preparing the historical dashboard</h1>
+        <p>Loading session data, map geometry, and interaction layers.</p>
+      </div>
+    </div>
+
+    <header id="hdr" class="topbar">
+      <div class="title-block">
+        <p class="eyebrow">Educational history app</p>
+        <h1>Indian National Congress — Timeline 1885–1947</h1>
+        <p class="subtitle">Drag the year slider, read the current year brief, compare milestones, and trace the movement across the India map.</p>
+      </div>
+      <div class="header-tools" aria-label="Global controls">
+        <div id="score-pill" class="score-pill" aria-label="Quiz score summary">
+          <span id="score-val">0</span>
+          <span id="score-lbl">points</span>
+        </div>
+        <button id="share-btn" class="pill-btn" type="button" aria-label="Share the current session summary">Share summary</button>
+        <button id="theme-btn" class="pill-btn" type="button" aria-label="Toggle light or dark theme">Light theme</button>
+        <button id="reset-btn" class="pill-btn danger" type="button" aria-label="Reset saved progress">Reset progress</button>
+      </div>
+    </header>
+
+    <section id="yr-bar" class="year-bar" aria-label="Current timeline year">
+      <div id="yr-num" class="year-number">1885</div>
+      <div id="yr-right" class="year-copy">
+        <div id="era-lbl" class="era-label">Moderate Phase (1885–1905)</div>
+        <div id="evt-txt" class="event-line">INC founded in Bombay - W.C. Bonnerjee chairs first session</div>
+      </div>
+    </section>
+
+    <section id="tool-strip" class="tool-strip" aria-label="Filter and search controls">
+      <label class="field field-search" for="search-input">
+        <span>Search</span>
+        <div class="input-wrap">
+          <input id="search-input" type="search" placeholder="Year, city, president, phase, or event" autocomplete="off" spellcheck="false" aria-label="Search by year, city, president, phase, or event">
+          <button id="search-clear" class="icon-btn" type="button" aria-label="Clear search">Clear</button>
+        </div>
+      </label>
+
+      <label class="field" for="phase-filter">
+        <span>Historical phase</span>
+        <select id="phase-filter" aria-label="Filter by historical phase">
+          <option value="all">All phases</option>
+          <option value="moderate">Moderate phase</option>
+          <option value="assertive">Assertive nationalism</option>
+          <option value="gandhi">Gandhian era</option>
+          <option value="cdo">Civil disobedience</option>
+          <option value="independence">Final push</option>
+        </select>
+      </label>
+
+      <label class="field toggle-field" for="important-toggle">
+        <span>Important events</span>
+        <div class="toggle-wrap">
+          <input id="important-toggle" type="checkbox" aria-label="Show only important milestones">
+          <span class="toggle-copy">Show only major milestones</span>
+        </div>
+      </label>
+
+      <label class="field" for="quiz-category">
+        <span>Quiz category</span>
+        <select id="quiz-category" aria-label="Choose quiz category">
+          <option value="presidents">Presidents</option>
+          <option value="cities">Cities</option>
+          <option value="years">Years</option>
+          <option value="phases">Phases</option>
+          <option value="events">Events</option>
+        </select>
+      </label>
+    </section>
+
+    <section id="sl-sect" class="slider-section" aria-label="Timeline slider">
+      <div id="sl-labels" class="slider-labels">
+        <span>1885</span>
+        <span>1947</span>
+      </div>
+      <div id="sl-outer" class="slider-shell">
+        <div id="track" class="slider-track" aria-hidden="true">
+          <div id="track-glow" class="slider-glow"></div>
+          <div id="track-fill" class="slider-fill"></div>
+          <div id="thumb" class="slider-thumb" aria-hidden="true">
+            <div id="thumb-inner" class="slider-thumb-dot"></div>
+            <div id="thumb-lbl" class="slider-thumb-label">1885</div>
+          </div>
+        </div>
+        <input id="yr-sl" class="slider-input" type="range" min="1885" max="1947" value="1885" step="1" aria-label="Select a year from 1885 to 1947">
+        <div id="era-ticks" class="era-ticks" aria-hidden="true"></div>
+        <div id="era-bands" class="era-bands" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <nav id="nav-row" class="nav-row" aria-label="Timeline navigation">
+      <button id="prev-btn" class="nav-btn" type="button" aria-label="Go to previous session">◀ Prev</button>
+      <button id="play-btn" class="nav-btn" type="button" aria-label="Autoplay the timeline">▶ Play</button>
+      <button id="next-btn" class="nav-btn" type="button" aria-label="Go to next session">Next ▶</button>
+      <div id="era-badge" class="era-badge" aria-live="polite">
+        <div id="era-dot" class="era-dot"></div>
+        <span id="era-badge-txt">Moderate Phase</span>
+      </div>
+    </nav>
+
+    <div id="jumps" class="jump-row" aria-label="Milestone jump buttons"></div>
+
+    <main id="content" class="content-shell">
+      <button id="drawer-toggle" class="drawer-toggle"
+              aria-label="Toggle current stop and tools"
+              aria-expanded="false"
+              aria-controls="fc-panel"
+              type="button">
+        ☰
+      </button>
+
+      <section id="map-side" class="map-panel" aria-label="India map and quiz panel">
+        <div id="map-wrap" class="map-wrap">
+          <div id="map-status" class="map-status" role="status" aria-live="polite">Loading map...</div>
+          <svg id="the-map" class="map-svg" role="img" aria-label="Map of India showing INC session cities"></svg>
+          <div id="tt" class="tooltip" role="tooltip" aria-hidden="true">
+            <div id="tt-name" class="tooltip-name"></div>
+            <div id="tt-info" class="tooltip-info"></div>
+            <div id="tt-cap" class="tooltip-cap"></div>
+            <div id="tt-cnt" class="tooltip-count"></div>
+          </div>
+          <div id="zoom-ctrls" class="zoom-controls" aria-label="Map zoom controls">
+            <button id="zoom-in" class="zoom-btn" type="button" aria-label="Zoom in">+</button>
+            <button id="zoom-out" class="zoom-btn" type="button" aria-label="Zoom out">−</button>
+            <button id="zoom-reset" class="zoom-btn" type="button" aria-label="Reset map zoom">⌂</button>
+          </div>
+        </div>
+
+        <div id="legend" class="legend" aria-label="Historical phase legend"></div>
+
+        <section id="quiz-wrap" class="quiz-wrap" aria-label="Quiz section">
+          <button id="open-quiz" class="quiz-open-btn" type="button">Start quiz</button>
+          <div id="quiz-zone" class="quiz-zone" hidden>
+            <div class="quiz-head">
+              <div>
+                <h2>Quick Quiz <span id="quiz-streak"></span></h2>
+                <p id="quiz-meta" class="section-note">Presidents</p>
+              </div>
+              <button id="quiz-close" class="quiz-close-btn" type="button" aria-label="Collapse quiz">&times;</button>
+            </div>
+            <div id="quiz-state" class="quiz-state"></div>
+            <div id="qtext" class="quiz-question-shell"></div>
+            <div id="qopts" class="quiz-options"></div>
+            <div id="qfb" class="quiz-feedback"></div>
+            <button id="qnext" class="soft-btn quiz-next-btn" type="button" hidden>Next question</button>
+          </div>
+        </section>
+      </section>
+
+      <aside id="fc-panel" class="side-panel" aria-label="Current stop and study tools panel">
+        <div id="fc-hdr" class="panel-header">
+          <span id="fc-hdr-lbl">Current Stop</span>
+          <span id="fc-cnt"></span>
+        </div>
+
+        <div id="fc-scroll" class="panel-scroll">
+          <section id="session-card-panel" class="panel-card">
+            <div id="session-card-slot"></div>
+          </section>
+
+          <section id="search-panel" class="panel-card">
+            <div class="section-head">
+              <h2>Search Results</h2>
+              <span id="search-count" class="section-meta"></span>
+            </div>
+            <p class="section-note">Search by year, city, president, phase, or event.</p>
+            <div id="search-results" class="result-list"></div>
+          </section>
+
+          <section id="compare-panel" class="panel-card">
+            <div class="section-head">
+              <h2>Compare Sessions</h2>
+              <span class="section-meta">Side by side</span>
+            </div>
+            <div class="compare-controls">
+              <label class="mini-field" for="compare-year-a">
+                <span>Left session</span>
+                <select id="compare-year-a"></select>
+              </label>
+              <label class="mini-field" for="compare-year-b">
+                <span>Right session</span>
+                <select id="compare-year-b"></select>
+              </label>
+              <div class="compare-actions">
+                <button id="compare-swap" class="soft-btn" type="button">Swap</button>
+              </div>
+            </div>
+            <div id="compare-result" class="compare-grid"></div>
+          </section>
+
+          <section id="notes-panel" class="panel-card">
+            <div class="section-head">
+              <h2>Notes</h2>
+              <span id="notes-meta" class="section-meta">Saved locally</span>
+            </div>
+            <label class="textarea-field" for="notes-input">
+              <span class="sr-only">Notes for the selected year</span>
+              <textarea id="notes-input" rows="5" placeholder="Write a note about this session or year..." aria-label="Notes for the selected year"></textarea>
+            </label>
+          </section>
+
+          <section id="bookmarks-panel" class="panel-card">
+            <div class="section-head">
+              <h2>Bookmarks</h2>
+              <span id="bookmark-count" class="section-meta">0 saved</span>
+            </div>
+            <div class="panel-actions">
+              <button id="bookmark-current-btn" class="soft-btn" type="button">Bookmark current year</button>
+            </div>
+            <div id="bookmark-list" class="bookmark-list"></div>
+          </section>
+
+          <section id="dashboard-panel" class="panel-card">
+            <div class="section-head">
+              <h2>Progress Dashboard</h2>
+              <span class="section-meta">Quiz stats</span>
+            </div>
+            <div id="dashboard-grid" class="dashboard-grid"></div>
+          </section>
+
+          <section id="sources-panel" class="panel-card">
+            <details id="sources-details">
+              <summary>Sources</summary>
+              <p class="section-note">Historical summaries are synthesised from standard references and INC session records.</p>
+              <ul id="sources-list" class="sources-list"></ul>
+            </details>
+          </section>
+        </div>
+      </aside>
+    </main>
+
+    <footer id="status-bar" class="status-bar" role="status" aria-live="polite">Ready.</footer>
+    <div id="error-banner" class="error-banner" role="alert" hidden></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" integrity="sha512-M7nHCiNUOwFt6Us3r8alutZLm9qMt4s9951uo8jqO4UwJ1hziseL6O3ndFyigx6+LREfZqnhHxYjKRJ8ZQ69DQ==" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js" integrity="sha512-4UKI/XKm3xrvJ6pZS5oTRvIQGIzZFoXR71rRBb1y2N+PbwAsKa5tPl2J6WvbEvwN3TxQCm8hMzsl/pO+82iRlg==" crossorigin="anonymous"></script>
+  <script src="data.js"></script>
+  <script src="map-data.js"></script>
+  <script src="timeline.js"></script>
+  <script src="map.js"></script>
+  <script src="quiz.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
