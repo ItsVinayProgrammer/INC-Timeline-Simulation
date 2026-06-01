@@ -183,21 +183,12 @@ Quiz generation is in `quiz.js`. Modify `makeQuestion()` to add custom question 
 - Screen reader friendly
 
 ## Known Limitations
-
+- Improving Dark mode theme
 - Map requires JavaScript (no fallback for JS-disabled browsers)
 - Geographic data only covers India's current borders
 - Historical data focuses on major sessions (95 recorded sessions)
 - Quiz questions are generated dynamically (limited by data pool)
 
-## Future Enhancements
-
-- Add more detailed biographies of INC presidents
-- Expand geographic visualization with state-specific histories
-- Add multimedia (images, videos of sessions)
-- Implement multiplayer quiz challenges
-- Add PDF export for study materials
-- Implement spaced repetition for notes
-- Add voice narration of key events
 
 ## Sources & References
 
@@ -219,20 +210,6 @@ To contribute improvements:
 4. Keep the government-education style
 5. Ensure mobile responsiveness
 6. Test accessibility
-
-## License
-
-This educational resource is provided as-is for learning purposes.
-
-## Support
-
-For issues, questions, or suggestions:
-- Check the **search functionality** - it searches all data
-- Review the **quiz feedback** - it explains answers
-- Use the **progress dashboard** to track learning
-- Take **notes** for revision
-
----
 
 **Last Updated**: June 2026
 **Version**: 1.0
