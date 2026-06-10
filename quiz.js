@@ -44,6 +44,22 @@
     if (state.importantOnly) {
       pool = pool.filter((session) => Data.IMPORTANT_YEARS?.has(session.y));
     }
+    const query = normalizeText(state.searchQuery);
+    if (query) {
+      const getSessionSearchText = (session) => {
+        const eventText = Array.isArray(session.ev) ? session.ev.join(' ') : '';
+        const phaseLabel = PHASES[session.phase]?.label || session.phase || '';
+        return [
+          session.y,
+          session.city,
+          session.president,
+          phaseLabel,
+          eventText,
+          session.desc,
+        ].join(' ').toLowerCase();
+      };
+      pool = pool.filter((session) => getSessionSearchText(session).includes(query));
+    }
     if (pool.length < 4) {
       pool = INC.filter((session) => session && session.city);
     }

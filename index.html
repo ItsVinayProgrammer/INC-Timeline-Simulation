@@ -33,11 +33,16 @@
         </div>
         <button id="share-btn" class="pill-btn" type="button" aria-label="Share the current session summary">Share summary</button>
         <button id="theme-btn" class="pill-btn" type="button" aria-label="Toggle light or dark theme">Light theme</button>
+        <button id="quiz-btn" class="pill-btn highlight-quiz" type="button" aria-label="Open historical quiz">Quiz</button>
+        <button id="bookmarks-btn" class="pill-btn" type="button" aria-label="Open saved bookmarks">
+          <svg class="header-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px; display: inline-block;">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>Bookmarks</button>
         <button id="reset-btn" class="pill-btn danger" type="button" aria-label="Reset saved progress">Reset progress</button>
       </div>
     </header>
 
-    <section id="yr-bar" class="year-bar" aria-label="Current timeline year">
+    <section id="yr-bar" class="year-bar" aria-label="Current timeline year" aria-hidden="true" hidden>
       <div id="yr-num" class="year-number">1885</div>
       <div id="yr-right" class="year-copy">
         <div id="era-lbl" class="era-label">Moderate Phase (1885–1905)</div>
@@ -54,80 +59,55 @@
         </div>
       </label>
 
-      <label class="field" for="phase-filter">
-        <span>Historical phase</span>
-        <select id="phase-filter" aria-label="Filter by historical phase">
-          <option value="all">All phases</option>
-          <option value="moderate">Moderate phase</option>
-          <option value="assertive">Assertive nationalism</option>
-          <option value="gandhi">Gandhian era</option>
-          <option value="cdo">Civil disobedience</option>
-          <option value="independence">Final push</option>
-        </select>
-      </label>
+      <button id="mobile-filters-btn" class="pill-btn mobile-filters-btn" type="button" aria-expanded="false">
+        <svg class="header-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px; display: inline-block;">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>Filters
+      </button>
 
-      <label class="field toggle-field" for="important-toggle">
-        <span>Important events</span>
-        <div class="toggle-wrap">
-          <input id="important-toggle" type="checkbox" aria-label="Show only important milestones">
-          <span class="toggle-copy">Show only major milestones</span>
+      <div id="filters-group" class="filters-group">
+        <div class="filters-sheet-header">
+          <h3>Filters</h3>
+          <button id="filters-close-btn" class="filters-close-btn" type="button" aria-label="Close filters">&times;</button>
         </div>
-      </label>
 
-      <label class="field" for="quiz-category">
-        <span>Quiz category</span>
-        <select id="quiz-category" aria-label="Choose quiz category">
-          <option value="presidents">Presidents</option>
-          <option value="cities">Cities</option>
-          <option value="years">Years</option>
-          <option value="phases">Phases</option>
-          <option value="events">Events</option>
-        </select>
-      </label>
-    </section>
+        <label class="field" for="phase-filter">
+          <span>Historical phase</span>
+          <select id="phase-filter" aria-label="Filter by historical phase">
+            <option value="all">All phases</option>
+            <option value="moderate">Moderate phase</option>
+            <option value="assertive">Assertive nationalism</option>
+            <option value="gandhi">Gandhian era</option>
+            <option value="cdo">Civil disobedience</option>
+            <option value="independence">Final push</option>
+          </select>
+        </label>
 
-    <section id="sl-sect" class="slider-section" aria-label="Timeline slider">
-      <div id="sl-labels" class="slider-labels">
-        <span>1885</span>
-        <span>1947</span>
-      </div>
-      <div id="sl-outer" class="slider-shell">
-        <div id="track" class="slider-track" aria-hidden="true">
-          <div id="track-glow" class="slider-glow"></div>
-          <div id="track-fill" class="slider-fill"></div>
-          <div id="thumb" class="slider-thumb" aria-hidden="true">
-            <div id="thumb-inner" class="slider-thumb-dot"></div>
-            <div id="thumb-lbl" class="slider-thumb-label">1885</div>
+        <label class="field toggle-field" for="important-toggle">
+          <span>Important events</span>
+          <div class="toggle-wrap">
+            <input id="important-toggle" type="checkbox" aria-label="Show only important milestones">
+            <span class="toggle-copy">Show only major milestones</span>
           </div>
-        </div>
-        <input id="yr-sl" class="slider-input" type="range" min="1885" max="1947" value="1885" step="1" aria-label="Select a year from 1885 to 1947">
-        <div id="era-ticks" class="era-ticks" aria-hidden="true"></div>
-        <div id="era-bands" class="era-bands" aria-hidden="true"></div>
+        </label>
+
+        <label class="field" for="quiz-category">
+          <span>Quiz category</span>
+          <select id="quiz-category" aria-label="Choose quiz category">
+            <option value="presidents">Presidents</option>
+            <option value="cities">Cities</option>
+            <option value="years">Years</option>
+            <option value="phases">Phases</option>
+            <option value="events">Events</option>
+          </select>
+        </label>
       </div>
     </section>
-
-    <nav id="nav-row" class="nav-row" aria-label="Timeline navigation">
-      <button id="prev-btn" class="nav-btn" type="button" aria-label="Go to previous session">◀ Prev</button>
-      <button id="play-btn" class="nav-btn" type="button" aria-label="Autoplay the timeline">▶ Play</button>
-      <button id="next-btn" class="nav-btn" type="button" aria-label="Go to next session">Next ▶</button>
-      <div id="era-badge" class="era-badge" aria-live="polite">
-        <div id="era-dot" class="era-dot"></div>
-        <span id="era-badge-txt">Moderate Phase</span>
-      </div>
-    </nav>
 
     <div id="jumps" class="jump-row" aria-label="Milestone jump buttons"></div>
 
     <main id="content" class="content-shell">
-      <button id="drawer-toggle" class="drawer-toggle"
-              aria-label="Toggle current stop and tools"
-              aria-expanded="false"
-              aria-controls="fc-panel"
-              type="button">
-        ☰
-      </button>
-
-      <section id="map-side" class="map-panel" aria-label="India map and quiz panel">
+      <section id="map-side" class="map-panel" aria-label="India map, selected session, and quiz panel">
         <div id="map-wrap" class="map-wrap">
           <div id="map-status" class="map-status" role="status" aria-live="polite">Loading map...</div>
           <svg id="the-map" class="map-svg" role="img" aria-label="Map of India showing INC session cities"></svg>
@@ -137,117 +117,169 @@
             <div id="tt-cap" class="tooltip-cap"></div>
             <div id="tt-cnt" class="tooltip-count"></div>
           </div>
+
           <div id="zoom-ctrls" class="zoom-controls" aria-label="Map zoom controls">
             <button id="zoom-in" class="zoom-btn" type="button" aria-label="Zoom in">+</button>
             <button id="zoom-out" class="zoom-btn" type="button" aria-label="Zoom out">−</button>
             <button id="zoom-reset" class="zoom-btn" type="button" aria-label="Reset map zoom">⌂</button>
+            <button id="map-quiz-btn" class="zoom-btn highlight-quiz" type="button" aria-label="Open historical quiz" title="Open Quiz">❓</button>
           </div>
         </div>
 
-        <div id="legend" class="legend" aria-label="Historical phase legend"></div>
-
-        <section id="quiz-wrap" class="quiz-wrap" aria-label="Quiz section">
-          <button id="open-quiz" class="quiz-open-btn" type="button">Start quiz</button>
-          <div id="quiz-zone" class="quiz-zone" hidden>
-            <div class="quiz-head">
-              <div>
-                <h2>Quick Quiz <span id="quiz-streak"></span></h2>
-                <p id="quiz-meta" class="section-note">Presidents</p>
-              </div>
-              <button id="quiz-close" class="quiz-close-btn" type="button" aria-label="Collapse quiz">&times;</button>
+        <div id="playback-panel" class="playback-panel" aria-label="Historical playback controls">
+          <section id="sl-sect" class="slider-section playback-timeline" aria-label="Timeline scrubber">
+            <div id="sl-labels" class="slider-labels">
+              <span>1885</span>
+              <span>1947</span>
             </div>
-            <div id="quiz-state" class="quiz-state"></div>
-            <div id="qtext" class="quiz-question-shell"></div>
-            <div id="qopts" class="quiz-options"></div>
-            <div id="qfb" class="quiz-feedback"></div>
-            <button id="qnext" class="soft-btn quiz-next-btn" type="button" hidden>Next question</button>
-          </div>
+            <div id="sl-outer" class="slider-shell">
+              <div id="track" class="slider-track" aria-hidden="true">
+                <div id="track-glow" class="slider-glow"></div>
+                <div id="track-fill" class="slider-fill"></div>
+                <div id="thumb" class="slider-thumb" aria-hidden="true">
+                  <div id="thumb-inner" class="slider-thumb-dot"></div>
+                  <div id="thumb-lbl" class="slider-thumb-label">1885</div>
+                </div>
+              </div>
+              <input id="yr-sl" class="slider-input" type="range" min="1885" max="1947" value="1885" step="1" aria-label="Select a year from 1885 to 1947">
+              <div id="era-ticks" class="era-ticks" aria-hidden="true"></div>
+              <div id="era-bands" class="era-bands" aria-hidden="true"></div>
+              <div id="milestone-markers" class="milestone-markers" aria-hidden="true"></div>
+            </div>
+          </section>
+
+          <nav id="nav-row" class="nav-row map-nav playback-controls" aria-label="Timeline navigation">
+            <div id="playback-year" class="playback-year" aria-live="polite">1885</div>
+            <button id="prev-btn" class="nav-btn" type="button" aria-label="Go to previous session">◀ Prev</button>
+            <button id="play-btn" class="nav-btn" type="button" aria-label="Autoplay the timeline">▶ Play</button>
+            <button id="next-btn" class="nav-btn" type="button" aria-label="Go to next session">Next ▶</button>
+            <div id="era-badge" class="era-badge" aria-live="polite">
+              <div id="era-dot" class="era-dot"></div>
+              <span id="era-badge-txt">Moderate Phase</span>
+            </div>
+            <button id="drawer-toggle" class="drawer-toggle"
+                    aria-label="Toggle study tools"
+                    aria-expanded="false"
+                    aria-controls="fc-panel"
+                    type="button">
+              Tools
+            </button>
+          </nav>
+        </div>
+
+        <div id="legend" class="legend map-legend" aria-label="Historical phase legend"></div>
+
+        <section id="session-card-panel" class="session-dock" aria-label="Selected session summary">
+          <div id="session-card-slot"></div>
         </section>
       </section>
 
-      <aside id="fc-panel" class="side-panel" aria-label="Current stop and study tools panel">
+      <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+      <div id="filters-backdrop" class="filters-backdrop" aria-hidden="true" hidden></div>
+      <aside id="fc-panel" class="side-panel" aria-label="Utility tools panel" aria-hidden="false">
         <div id="fc-hdr" class="panel-header">
-          <span id="fc-hdr-lbl">Current Stop</span>
-          <span id="fc-cnt"></span>
+          <div class="panel-hdr-left">
+            <span id="fc-hdr-lbl">Study Tools</span>
+            <span id="fc-cnt" class="section-meta"></span>
+          </div>
+          <button id="fc-close" class="fc-close-btn" type="button" aria-label="Close study tools" title="Close Tools">&times;</button>
+        </div>
+
+        <div class="side-primary">
+          <section id="quiz-wrap" class="quiz-wrap panel-card" aria-label="Quiz section">
+            <button id="open-quiz" class="quiz-open-btn" type="button">Start quiz</button>
+            <div id="quiz-zone" class="quiz-zone" hidden>
+              <div class="quiz-head">
+                <div>
+                  <h2>Quick Quiz <span id="quiz-streak"></span></h2>
+                  <p id="quiz-meta" class="section-note">Presidents</p>
+                </div>
+                <button id="quiz-close" class="quiz-close-btn" type="button" aria-label="Collapse quiz">&times;</button>
+              </div>
+              <div id="quiz-state" class="quiz-state"></div>
+              <div id="qtext" class="quiz-question-shell"></div>
+              <div id="qopts" class="quiz-options"></div>
+              <div id="qfb" class="quiz-feedback"></div>
+              <button id="qnext" class="soft-btn quiz-next-btn" type="button" hidden>Next question</button>
+            </div>
+          </section>
         </div>
 
         <div id="fc-scroll" class="panel-scroll">
-          <section id="session-card-panel" class="panel-card">
-            <div id="session-card-slot"></div>
-          </section>
 
-          <section id="search-panel" class="panel-card">
-            <div class="section-head">
-              <h2>Search Results</h2>
-              <span id="search-count" class="section-meta"></span>
-            </div>
-            <p class="section-note">Search by year, city, president, phase, or event.</p>
-            <div id="search-results" class="result-list"></div>
-          </section>
-
-          <section id="compare-panel" class="panel-card">
-            <div class="section-head">
-              <h2>Compare Sessions</h2>
+          <details id="compare-panel" class="panel-card tool-disclosure">
+            <summary class="tool-summary">
+              <span>Compare Sessions</span>
               <span class="section-meta">Side by side</span>
-            </div>
-            <div class="compare-controls">
-              <label class="mini-field" for="compare-year-a">
-                <span>Left session</span>
-                <select id="compare-year-a"></select>
-              </label>
-              <label class="mini-field" for="compare-year-b">
-                <span>Right session</span>
-                <select id="compare-year-b"></select>
-              </label>
-              <div class="compare-actions">
-                <button id="compare-swap" class="soft-btn" type="button">Swap</button>
+            </summary>
+            <div class="tool-content">
+              <div class="compare-controls">
+                <label class="mini-field" for="compare-year-a">
+                  <span>Left session</span>
+                  <select id="compare-year-a"></select>
+                </label>
+                <label class="mini-field" for="compare-year-b">
+                  <span>Right session</span>
+                  <select id="compare-year-b"></select>
+                </label>
+                <div class="compare-actions">
+                  <button id="compare-swap" class="soft-btn" type="button">Swap</button>
+                </div>
               </div>
+              <div id="compare-result" class="compare-grid"></div>
             </div>
-            <div id="compare-result" class="compare-grid"></div>
-          </section>
+          </details>
 
-          <section id="notes-panel" class="panel-card">
-            <div class="section-head">
-              <h2>Notes</h2>
+          <details id="notes-panel" class="panel-card tool-disclosure">
+            <summary class="tool-summary">
+              <span>Notes</span>
               <span id="notes-meta" class="section-meta">Saved locally</span>
+            </summary>
+            <div class="tool-content">
+              <label class="textarea-field" for="notes-input">
+                <span class="sr-only">Notes for the selected year</span>
+                <textarea id="notes-input" rows="5" placeholder="Write a note about this session or year..." aria-label="Notes for the selected year"></textarea>
+              </label>
             </div>
-            <label class="textarea-field" for="notes-input">
-              <span class="sr-only">Notes for the selected year</span>
-              <textarea id="notes-input" rows="5" placeholder="Write a note about this session or year..." aria-label="Notes for the selected year"></textarea>
-            </label>
-          </section>
+          </details>
 
-          <section id="bookmarks-panel" class="panel-card">
-            <div class="section-head">
-              <h2>Bookmarks</h2>
+          <details id="bookmarks-panel" class="panel-card tool-disclosure">
+            <summary class="tool-summary">
+              <span>Bookmarks</span>
               <span id="bookmark-count" class="section-meta">0 saved</span>
+            </summary>
+            <div class="tool-content">
+              <div class="panel-actions">
+                <button id="bookmark-current-btn" class="soft-btn" type="button">Bookmark current year</button>
+              </div>
+              <div id="bookmark-list" class="bookmark-list"></div>
             </div>
-            <div class="panel-actions">
-              <button id="bookmark-current-btn" class="soft-btn" type="button">Bookmark current year</button>
-            </div>
-            <div id="bookmark-list" class="bookmark-list"></div>
-          </section>
+          </details>
 
-          <section id="dashboard-panel" class="panel-card">
-            <div class="section-head">
-              <h2>Progress Dashboard</h2>
+          <details id="dashboard-panel" class="panel-card tool-disclosure">
+            <summary class="tool-summary">
+              <span>Progress</span>
               <span class="section-meta">Quiz stats</span>
+            </summary>
+            <div class="tool-content">
+              <div id="dashboard-grid" class="dashboard-grid"></div>
             </div>
-            <div id="dashboard-grid" class="dashboard-grid"></div>
-          </section>
+          </details>
 
-          <section id="sources-panel" class="panel-card">
-            <details id="sources-details">
-              <summary>Sources</summary>
+          <details id="sources-panel" class="panel-card tool-disclosure">
+            <summary class="tool-summary">
+              <span>Sources</span>
+            </summary>
+            <div class="tool-content">
               <p class="section-note">Historical summaries are synthesised from standard references and INC session records.</p>
               <ul id="sources-list" class="sources-list"></ul>
-            </details>
-          </section>
+            </div>
+          </details>
         </div>
       </aside>
     </main>
 
-    <footer id="status-bar" class="status-bar" role="status" aria-live="polite">Ready.</footer>
+    <footer id="status-bar" class="status-bar" role="status" aria-live="polite" aria-hidden="true" hidden>Ready.</footer>
     <div id="error-banner" class="error-banner" role="alert" hidden></div>
   </div>
 

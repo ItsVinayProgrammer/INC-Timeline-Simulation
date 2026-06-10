@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
 const YEAR_MIN = 1885;
 const YEAR_MAX = 1947;
 const YEAR_RANGE = YEAR_MAX - YEAR_MIN;
@@ -233,9 +233,9 @@ const JUMPS=[
   {label:"Independence",y:1947},
 ];
 const ERA_MARKS=[
-  {y:1885,l:"1885"},{y:1905,l:"Swaraj"},{y:1907,l:"Split"},
-  {y:1916,l:"Lucknow"},{y:1920,l:"Gandhi"},{y:1929,l:"Purna"},
-  {y:1942,l:"QIM"},{y:1947,l:"Indep."},
+  {y:1885,l:"1885"},{y:1900,l:"1900"},{y:1910,l:"1910"},
+  {y:1920,l:"1920"},{y:1930,l:"1930"},{y:1940,l:"1940"},
+  {y:1947,l:"1947"},
 ];
 const ERA_COLORS=[
   {s:1885,e:1906,c:"#1a5276"},{s:1906,e:1920,c:"#117a65"},

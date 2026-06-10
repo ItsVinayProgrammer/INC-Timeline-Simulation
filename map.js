@@ -348,14 +348,44 @@
       refs.mapSvg.hidden = false;
     }
 
+
+
     function updatePins() {
       const currentYear = clampYear(state.year);
-      const historySessions = (Data.getSessionsUpTo?.(currentYear) || []).filter((session) => Array.isArray(Data.CITY_COORDS?.[session.city]));
+      const queryText = String(state.searchQuery || '').trim().toLowerCase();
+      const phaseFilter = state.phaseFilter || 'all';
+      const importantOnly = Boolean(state.importantOnly);
+
+      const matchesFilters = (session) => {
+        if (phaseFilter !== 'all' && session.phase !== phaseFilter) return false;
+        if (importantOnly && !Data.IMPORTANT_YEARS?.has(session.y)) return false;
+        if (!queryText) return true;
+
+        const evText = Array.isArray(session.ev) ? session.ev.join(' ') : '';
+        const phaseLabel = Data.PHASES?.[session.phase]?.label || session.phase || '';
+        const searchText = [
+          session.y,
+          session.city,
+          session.president,
+          phaseLabel,
+          evText,
+          session.desc
+        ].join(' ').toLowerCase();
+
+        return searchText.includes(queryText);
+      };
+
+      const filteredYears = new Set(
+        (Data.INC || []).filter(matchesFilters).map(s => s.y)
+      );
+
+      const historySessions = (Data.getSessionsUpTo?.(currentYear) || [])
+        .filter((session) => Array.isArray(Data.CITY_COORDS?.[session.city]) && filteredYears.has(session.y));
       const activeSession = getActiveSession(currentYear);
       const transitionDuration = state.playing ? 650 : 220;
       const transitionEase = d3.easeCubicOut;
 
-      const pinSelection = pinLayer.selectAll('circle.history-pin')
+      const pinSelection = pinLayer.selectAll('g.history-pin')
         .data(historySessions, (session) => session.y);
 
       pinSelection.exit()
@@ -363,16 +393,22 @@
         .transition()
         .duration(180)
         .attr('opacity', 0)
-        .attr('r', 0)
+        .attr('transform', function(session) {
+          const t = d3.select(this).attr('transform') || '';
+          const cleanT = t.replace(/\s*scale\([^)]*\)/, '');
+          return `${cleanT} scale(0)`;
+        })
         .remove();
 
-      const pinEnter = pinSelection.enter().append('circle')
+      const pinEnter = pinSelection.enter().append('g')
         .attr('class', 'history-pin pin')
-        .attr('r', 0)
+        .attr('opacity', 0)
+        .attr('transform', (session) => {
+          const [x, y] = projection(Data.CITY_COORDS[session.city]);
+          return `translate(${x}, ${y}) scale(0)`;
+        })
         .attr('tabindex', 0)
         .attr('role', 'button')
-        .attr('stroke', 'rgba(255,255,255,0.9)')
-        .attr('stroke-width', 1)
         .on('mouseenter', (event, session) => showPinTooltip(event, session))
         .on('mousemove', (event, session) => showPinTooltip(event, session))
         .on('mouseleave', hideStateTooltip)
@@ -389,16 +425,34 @@
           }
         });
 
-      pinSelection.merge(pinEnter)
+      pinEnter.append('path')
+        .attr('class', 'pin-path')
+        .attr('d', 'M 0 0 C -3.5 -3.5 -7 -7 -7 -11 A 7 7 0 1 1 7 -11 C 7 -7 3.5 -3.5 0 0 Z')
+        .attr('stroke', 'rgba(255,255,255,0.9)')
+        .attr('stroke-width', 1);
+
+      pinEnter.append('circle')
+        .attr('class', 'pin-inner-dot')
+        .attr('cx', 0)
+        .attr('cy', -11)
+        .attr('r', 2);
+
+      const mergedPins = pinSelection.merge(pinEnter);
+
+      mergedPins
         .interrupt()
         .transition()
         .duration(transitionDuration)
         .ease(transitionEase)
-        .attr('cx', (session) => projection(Data.CITY_COORDS[session.city])[0])
-        .attr('cy', (session) => projection(Data.CITY_COORDS[session.city])[1])
-        .attr('fill', (session) => Data.getPhaseColor?.(session.y) || '#1a5276')
-        .attr('opacity', (session) => (session.y === currentYear ? 1 : 0.6))
-        .attr('r', (session) => (session.y === currentYear ? 7.2 : 4.5));
+        .attr('opacity', (session) => (session.y === currentYear ? 1 : 0.75))
+        .attr('transform', (session) => {
+          const [x, y] = projection(Data.CITY_COORDS[session.city]);
+          const scale = session.y === currentYear ? 1.4 : 1.0;
+          return `translate(${x}, ${y}) scale(${scale})`;
+        });
+
+      mergedPins.select('.pin-path')
+        .attr('fill', (session) => Data.getPhaseColor?.(session.y) || '#1a5276');
 
       const currentData = activeSession && Array.isArray(Data.CITY_COORDS?.[activeSession.city]) ? [activeSession] : [];
       const currentSelection = currentLayer.selectAll('g.current-session')
@@ -412,9 +466,20 @@
         .remove();
 
       const currentEnter = currentSelection.enter().append('g').attr('class', 'current-session').attr('opacity', 0);
-      currentEnter.append('circle').attr('class', 'current-halo').attr('r', 19).attr('fill', 'none').attr('stroke-width', 2);
-      currentEnter.append('circle').attr('class', 'current-dot').attr('r', 8);
+      currentEnter.append('circle').attr('class', 'current-halo').attr('cx', 0).attr('cy', 0).attr('r', 14).attr('fill', 'none').attr('stroke-width', 2);
       currentEnter.append('text').attr('class', 'current-label');
+
+      // Append foreignObject for the details bubble above the pin
+      const bubbleFO = currentEnter.append('foreignObject')
+        .attr('class', 'playback-bubble-fo')
+        .attr('width', 240)
+        .attr('height', 110)
+        .attr('x', -120)
+        .attr('y', -130);
+      
+      // Append the HTML details bubble container inside it
+      bubbleFO.append('xhtml:div')
+        .attr('class', 'playback-bubble show');
 
       const mergedCurrent = currentSelection.merge(currentEnter);
       mergedCurrent
@@ -424,31 +489,37 @@
         .ease(transitionEase)
         .attr('opacity', 1)
         .attr('transform', (session) => {
-        const [x, y] = projection(Data.CITY_COORDS[session.city]);
-        return `translate(${x}, ${y})`;
-      });
+          const [x, y] = projection(Data.CITY_COORDS[session.city]);
+          return `translate(${x}, ${y})`;
+        });
       mergedCurrent.select('circle.current-halo')
         .interrupt()
         .transition()
         .duration(transitionDuration)
         .attr('stroke', Data.getPhaseColor?.(activeSession?.y) || '#1a5276');
-      mergedCurrent.select('circle.current-dot')
-        .interrupt()
-        .transition()
-        .duration(transitionDuration)
-        .attr('fill', Data.getPhaseColor?.(activeSession?.y) || '#1a5276')
-        .attr('stroke', 'rgba(255,255,255,0.92)')
-        .attr('stroke-width', 1.2);
       mergedCurrent.select('text.current-label')
-        .attr('x', 13)
-        .attr('y', -13)
+        .attr('x', 0)
+        .attr('y', 18)
+        .attr('text-anchor', 'middle')
         .attr('fill', 'var(--txt)')
-        .attr('font-size', 13)
+        .attr('font-size', 11)
         .attr('font-weight', 700)
         .attr('paint-order', 'stroke')
-        .attr('stroke', 'rgba(255,255,255,0.72)')
+        .attr('stroke', 'var(--card, rgba(255,255,255,0.85))')
         .attr('stroke-width', 3.5)
-        .text((session) => `${session.y} - ${session.city}`);
+        .text((session) => `${session.y} — ${session.city}`);
+
+      // Handle the floating details bubble inside current-session group
+      if (activeSession) {
+        const eventText = activeSession.ev?.[0] || activeSession.desc || '';
+        mergedCurrent.select('.playback-bubble').html(`
+          <div class="bubble-header">
+            <span class="bubble-year">${activeSession.y}</span>
+            <span class="bubble-city">${activeSession.city}</span>
+          </div>
+          <div class="bubble-event">${eventText}</div>
+        `);
+      }
 
       const activeStateName = getActiveStateName(activeSession);
       fillLayer.selectAll('path.state-fill')

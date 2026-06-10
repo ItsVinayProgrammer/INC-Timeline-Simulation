@@ -31,6 +31,42 @@
     return String(value || '').toLowerCase();
   }
 
+  function escapeHtml(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function highlightText(text, query) {
+    const safeText = escapeHtml(text);
+    if (!query) return safeText;
+    const escapedQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    return safeText.replace(regex, '<mark class="search-highlight">$1</mark>');
+  }
+
+  function buildSearchText(session) {
+    const eventText = Array.isArray(session.ev) ? session.ev.join(' ') : '';
+    return normalizeText([
+      session.y,
+      session.city,
+      session.president,
+      getPhaseLabel(session.phase),
+      eventText,
+      session.desc,
+    ].join(' '));
+  }
+
+  function matchesFilters(session, queryText, phaseFilter, importantOnly) {
+    if (phaseFilter !== 'all' && session.phase !== phaseFilter) return false;
+    if (importantOnly && !IMPORTANT_YEARS.has(session.y)) return false;
+    if (!queryText) return true;
+    return buildSearchText(session).includes(queryText);
+  }
+
   function getPhaseLabel(phaseKey) {
     return PHASES[phaseKey]?.label || phaseKey || 'Unknown';
   }
@@ -63,29 +99,7 @@
     return buildSearchText(session).includes(queryText);
   }
 
-  function findPreviousSessionYear(year) {
-    const numericYear = clampYear(year);
-    let previous = SESSION_YEARS[0] || YEAR_MIN;
-    for (const sessionYear of SESSION_YEARS) {
-      if (sessionYear >= numericYear) break;
-      previous = sessionYear;
-    }
-    return previous;
-  }
-
-  function findNextSessionYear(year) {
-    const numericYear = clampYear(year);
-    for (const sessionYear of SESSION_YEARS) {
-      if (sessionYear > numericYear) return sessionYear;
-    }
-    return SESSION_YEARS[0] || YEAR_MIN;
-  }
-
-  function findNearestDisplaySession(year) {
-    const exact = Data.getSession?.(year);
-    if (exact) return exact;
-    return Data.getNearestSession?.(year) || null;
-  }
+  // Removed old findPreviousSessionYear, findNextSessionYear, and findNearestDisplaySession functions to redefine them inline inside the controller.
 
   function buildPhaseBadge(session, year) {
     const badge = createEl('span', 'session-badge');
@@ -108,15 +122,17 @@
     return tagList;
   }
 
-  function appendBriefFact(parent, label, value) {
+  function appendBriefFact(parent, label, value, query) {
     if (!value) return;
     const item = createEl('div', 'brief-fact');
     item.appendChild(createEl('span', 'brief-fact-label', label));
-    item.appendChild(createEl('span', 'brief-fact-value', value));
+    const valSpan = createEl('span', 'brief-fact-value');
+    valSpan.innerHTML = highlightText(value, query);
+    item.appendChild(valSpan);
     parent.appendChild(item);
   }
 
-  function buildBriefHighlights(session) {
+  function buildBriefHighlights(session, query) {
     const events = Array.isArray(session?.ev) ? session.ev.filter(Boolean).slice(0, 3) : [];
     if (!events.length && session?.desc) events.push(session.desc);
     if (!events.length) return null;
@@ -126,7 +142,9 @@
     const list = createEl('ul', 'brief-highlight-list');
 
     for (const eventText of events) {
-      list.appendChild(createEl('li', '', eventText));
+      const li = createEl('li');
+      li.innerHTML = highlightText(eventText, query);
+      list.appendChild(li);
     }
 
     block.appendChild(heading);
@@ -134,7 +152,7 @@
     return block;
   }
 
-  function buildBriefTags(session, year) {
+  function buildBriefTags(session, year, query) {
     const tags = createEl('div', 'brief-tags');
     const phaseLabel = getPhaseLabel(session?.phase || Data.getPhaseKey?.(year));
     const tagTexts = [phaseLabel];
@@ -142,7 +160,9 @@
     if (session?.ev?.[0]) tagTexts.push(session.ev[0]);
 
     for (const tagText of tagTexts) {
-      tags.appendChild(createEl('span', 'brief-tag', tagText));
+      const span = createEl('span', 'brief-tag');
+      span.innerHTML = highlightText(tagText, query);
+      tags.appendChild(span);
     }
 
     return tags;
@@ -162,6 +182,46 @@
     let sourcesLoaded = false;
     let eraLoaded = false;
     let renderTimer = null;
+
+    function getFilteredSessions() {
+      const queryText = normalizeText(state.searchQuery).trim();
+      return INC.filter((session) => matchesFilters(session, queryText, state.phaseFilter, state.importantOnly));
+    }
+
+    function findPreviousSessionYear(year) {
+      const numericYear = clampYear(year);
+      const filtered = getFilteredSessions();
+      if (!filtered.length) return numericYear;
+      let previous = filtered[0].y;
+      for (const session of filtered) {
+        if (session.y >= numericYear) break;
+        previous = session.y;
+      }
+      return previous;
+    }
+
+    function findNextSessionYear(year) {
+      const numericYear = clampYear(year);
+      const filtered = getFilteredSessions();
+      if (!filtered.length) return numericYear;
+      for (const session of filtered) {
+        if (session.y > numericYear) return session.y;
+      }
+      return filtered[0].y;
+    }
+
+    function findNearestDisplaySession(year) {
+      const numericYear = clampYear(year);
+      const filtered = getFilteredSessions();
+      if (!filtered.length) return null;
+      let nearest = filtered[0];
+      for (const session of filtered) {
+        if (Math.abs(session.y - numericYear) < Math.abs(nearest.y - numericYear)) {
+          nearest = session;
+        }
+      }
+      return nearest;
+    }
 
     function requestRender() {
       if (typeof actions.requestRender === 'function') {
@@ -262,20 +322,29 @@
       const accentColor = getPhaseColor(phaseKey);
       const actionYear = supportingSession?.y || year;
       const isBookmarked = state.bookmarks.includes(actionYear);
+      const query = normalizeText(state.searchQuery).trim();
 
-      const brief = createEl('article', 'year-brief compact-brief');
-      brief.style.setProperty('--brief-accent', accentColor);
-      if (!exactSession) brief.classList.add('is-nearest');
+      const card = createEl('article', 'session-summary-card');
+      card.style.setProperty('--session-accent', accentColor);
+      if (!exactSession) card.classList.add('is-nearest');
 
-      const head = createEl('div', 'brief-head');
-      const yearMark = createEl('div', 'brief-year-mark', String(supportingSession?.y || year));
-      const eyebrow = createEl('div', 'brief-eyebrow');
-      const dot = createEl('span', 'brief-dot');
+      const isMatch = matchesFilters(supportingSession, query, state.phaseFilter, state.importantOnly);
+      if (!isMatch) {
+        card.classList.add('no-match-filter');
+      }
+
+      const head = createEl('div', 'summary-top');
+      const yearMark = createEl('div', 'summary-year', String(supportingSession?.y || year));
+      const eyebrow = createEl('div', 'summary-meta');
+      const dot = createEl('span', 'summary-dot');
       dot.style.background = accentColor;
       eyebrow.appendChild(dot);
       eyebrow.appendChild(createEl('span', '', phaseLabel));
       if (IMPORTANT_YEARS.has(actionYear)) {
-        eyebrow.appendChild(createEl('span', 'brief-kicker-chip', 'Major milestone'));
+        eyebrow.appendChild(createEl('span', 'summary-chip', 'Major milestone'));
+      }
+      if (!isMatch) {
+        eyebrow.appendChild(createEl('span', 'summary-chip warning', 'Out of Filter Scope'));
       }
 
       const titleText = exactSession
@@ -287,87 +356,111 @@
           : `Nearest record: ${supportingSession.y} - ${supportingSession.city}`
         : 'No session record found for this year.';
 
-      const copy = createEl('div', 'brief-copy');
+      const copy = createEl('div', 'summary-copy');
       copy.appendChild(eyebrow);
-      copy.appendChild(createEl('h2', 'brief-title', titleText));
-      copy.appendChild(createEl('p', 'brief-subtitle', subtitleText));
-      copy.appendChild(createEl('span', 'brief-year-chip', exactSession ? 'Selected year' : `Nearest ${actionYear}`));
+      
+      const titleEl = createEl('h2', 'summary-title');
+      titleEl.innerHTML = highlightText(titleText, query);
+      copy.appendChild(titleEl);
+      
+      const subtitleEl = createEl('p', 'summary-subtitle');
+      subtitleEl.innerHTML = highlightText(subtitleText, query);
+      copy.appendChild(subtitleEl);
 
       head.appendChild(yearMark);
       head.appendChild(copy);
-      brief.appendChild(head);
+      card.appendChild(head);
 
       if (supportingSession) {
         const leadEvent = supportingSession.ev?.find(Boolean) || supportingSession.desc;
-        const insight = createEl('div', 'brief-insight');
-        insight.appendChild(createEl('span', 'brief-insight-label', 'Milestone'));
-        insight.appendChild(createEl('p', 'brief-insight-text', leadEvent));
-        brief.appendChild(insight);
+        const insight = createEl('div', 'summary-focus');
+        insight.appendChild(createEl('span', 'summary-focus-label', 'Milestone'));
+        
+        const insightText = createEl('span', 'summary-focus-text');
+        insightText.innerHTML = highlightText(leadEvent, query);
+        insight.appendChild(insightText);
+        
+        card.appendChild(insight);
 
-        const summary = createEl('p', 'brief-summary');
-        summary.textContent = exactSession
+        const details = createEl('details', 'summary-details');
+        details.appendChild(createEl('summary', 'summary-details-toggle', 'Details'));
+
+        const detailsBody = createEl('div', 'summary-details-body');
+
+        const summaryText = createEl('p', 'summary-details-text');
+        const descText = exactSession
           ? supportingSession.desc
           : `The map stays anchored to the closest recorded Congress session: ${supportingSession.y} in ${supportingSession.city}.`;
-        brief.appendChild(summary);
-
-        const details = createEl('details', 'brief-more');
-        details.appendChild(createEl('summary', '', 'Details'));
+        summaryText.innerHTML = highlightText(descText, query);
+        detailsBody.appendChild(summaryText);
 
         const facts = createEl('div', 'brief-facts');
-        appendBriefFact(facts, 'City', supportingSession.city);
-        appendBriefFact(facts, 'President', supportingSession.president);
-        appendBriefFact(facts, 'Phase', phaseLabel);
-        appendBriefFact(facts, 'Record', exactSession ? 'Exact year' : 'Nearest year');
-        details.appendChild(facts);
-        const highlights = buildBriefHighlights(supportingSession);
-        if (highlights) details.appendChild(highlights);
-        details.appendChild(buildBriefTags(supportingSession, actionYear));
-        brief.appendChild(details);
+        appendBriefFact(facts, 'City', supportingSession.city, query);
+        appendBriefFact(facts, 'President', supportingSession.president, query);
+        appendBriefFact(facts, 'Phase', phaseLabel, query);
+        appendBriefFact(facts, 'Record', exactSession ? 'Exact year' : 'Nearest year', query);
+        detailsBody.appendChild(facts);
+
+        const highlights = buildBriefHighlights(supportingSession, query);
+        if (highlights) detailsBody.appendChild(highlights);
+
+        detailsBody.appendChild(buildBriefTags(supportingSession, actionYear, query));
+
+        details.appendChild(detailsBody);
+        card.appendChild(details);
       }
 
-      const actionsRow = createEl('div', 'brief-actions');
-      const bookmarkButton = createEl('button', 'card-btn brief-primary-action', isBookmarked ? 'Saved' : 'Save');
-      bookmarkButton.type = 'button';
-      bookmarkButton.addEventListener('click', () => actions.toggleBookmark(actionYear));
-      actionsRow.appendChild(bookmarkButton);
+      // Card action footer with share + bookmark
+      const actionFooter = createEl('div', 'card-action-footer');
 
-      const shareButton = createEl('button', 'card-btn', 'Share');
-      shareButton.type = 'button';
-      shareButton.addEventListener('click', () => actions.shareSession(actionYear));
-      actionsRow.appendChild(shareButton);
+      const shareBtn = createEl('button', 'card-action-btn');
+      shareBtn.type = 'button';
+      shareBtn.title = 'Share session';
+      shareBtn.setAttribute('aria-label', 'Share session');
+      shareBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+          <polyline points="16 6 12 2 8 6"></polyline>
+          <line x1="12" y1="2" x2="12" y2="15"></line>
+        </svg>
+        <span>Share</span>
+      `;
+      shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        actions.shareSession(actionYear);
+      });
+      actionFooter.appendChild(shareBtn);
 
-      if (supportingSession) {
-        const previousYear = findPreviousSessionYear(supportingSession.y);
-        const prevButton = createEl('button', 'card-btn', `Prev ${previousYear}`);
-        prevButton.type = 'button';
-        prevButton.addEventListener('click', () => actions.setYear(previousYear));
-        actionsRow.appendChild(prevButton);
+      const bookmarkBtn = createEl('button', 'card-action-btn');
+      bookmarkBtn.type = 'button';
+      bookmarkBtn.title = isBookmarked ? 'Remove bookmark' : 'Bookmark session';
+      bookmarkBtn.setAttribute('aria-label', isBookmarked ? 'Remove bookmark' : 'Bookmark session');
+      bookmarkBtn.classList.toggle('is-bookmarked', isBookmarked);
+      bookmarkBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span>${isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+      `;
+      bookmarkBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        actions.toggleBookmark(actionYear);
+      });
+      actionFooter.appendChild(bookmarkBtn);
 
-        const nextYear = findNextSessionYear(supportingSession.y);
-        const nextButton = createEl('button', 'card-btn', `Next ${nextYear}`);
-        nextButton.type = 'button';
-        nextButton.addEventListener('click', () => actions.setYear(nextYear));
-        actionsRow.appendChild(nextButton);
-      }
-
-      if (!exactSession && supportingSession) {
-        const openButton = createEl('button', 'card-btn', `Open ${supportingSession.y}`);
-        openButton.type = 'button';
-        openButton.addEventListener('click', () => actions.setYear(supportingSession.y));
-        actionsRow.appendChild(openButton);
-      }
-
-      brief.appendChild(actionsRow);
+      card.appendChild(actionFooter);
 
       clearNode(refs.sessionCardSlot);
-      refs.sessionCardSlot.appendChild(brief);
-
-      refs.bookmarkCurrentBtn.textContent = isBookmarked
-        ? 'Saved current year'
-        : 'Save current year';
+      refs.sessionCardSlot.appendChild(card);
+      if (refs.bookmarkCurrentBtn) {
+        refs.bookmarkCurrentBtn.textContent = isBookmarked
+          ? 'Saved current year'
+          : 'Save current year';
+      }
     }
 
     function renderSearchResults(year) {
+      if (!refs.searchCount || !refs.searchResults) return;
       const queryText = normalizeText(state.searchQuery).trim();
       const filteredSessions = INC.filter((session) => matchesFilters(session, queryText, state.phaseFilter, state.importantOnly));
       const headingCount = queryText || state.phaseFilter !== 'all' || state.importantOnly
@@ -422,10 +515,19 @@
 
       const buildCard = (session, selectedYear) => {
         const card = createEl('article', 'compare-card');
+        const phaseKey = session?.phase || Data.getPhaseKey?.(selectedYear);
+        const accentColor = getPhaseColor(phaseKey);
+        const softColor = Data.hexToRgba?.(accentColor, 0.12) || 'rgba(26, 82, 118, 0.12)';
+        const strongColor = Data.hexToRgba?.(accentColor, 0.28) || 'rgba(26, 82, 118, 0.28)';
+        
+        card.style.setProperty('--compare-accent', accentColor);
+        card.style.setProperty('--compare-accent-soft', softColor);
+        card.style.setProperty('--compare-accent-strong', strongColor);
+
         const head = createEl('div', 'compare-head');
         const yearLabel = createEl('div', 'compare-year', session ? String(session.y) : String(selectedYear));
         head.appendChild(yearLabel);
-        const phaseLabel = createEl('span', 'result-pill', getPhaseLabel(session?.phase || Data.getPhaseKey?.(selectedYear)));
+        const phaseLabel = createEl('span', 'result-pill', getPhaseLabel(phaseKey));
         head.appendChild(phaseLabel);
         card.appendChild(head);
 
@@ -480,8 +582,10 @@
         copy.appendChild(createEl('span', 'bookmark-subtitle', session ? getPhaseLabel(session.phase) : 'Saved bookmark'));
         jumpButton.appendChild(copy);
 
-        const removeButton = createEl('button', 'card-btn bookmark-remove', 'Remove');
+        const removeButton = createEl('button', 'bookmark-remove', '✕');
         removeButton.type = 'button';
+        removeButton.setAttribute('aria-label', `Remove bookmark for year ${bookmarkYear}`);
+        removeButton.setAttribute('title', `Remove bookmark for year ${bookmarkYear}`);
         removeButton.addEventListener('click', () => actions.toggleBookmark(bookmarkYear));
 
         item.appendChild(jumpButton);
@@ -512,6 +616,15 @@
         const card = createEl('article', 'stat-card');
         card.appendChild(createEl('span', 'stat-value', String(itemData.value)));
         card.appendChild(createEl('span', 'stat-label', itemData.label));
+        
+        if (itemData.label === 'Accuracy') {
+          const bar = createEl('div', 'stat-progress');
+          const fill = createEl('div', 'stat-progress-fill');
+          fill.style.width = String(itemData.value);
+          bar.appendChild(fill);
+          card.appendChild(bar);
+        }
+        
         refs.dashboardGrid.appendChild(card);
       }
       refs.scoreVal.textContent = String(score);
@@ -536,6 +649,9 @@
       refs.eraBadge.style.color = getPhaseColor(phaseKey);
 
       refs.yearNum.textContent = String(clampYear(year));
+      if (refs.playbackYear) {
+        refs.playbackYear.textContent = String(clampYear(year));
+      }
       refs.eventText.textContent = Data.getEventForYear?.(year) || 'No recorded milestone for this year';
 
       refs.searchInput.value = state.searchQuery || '';
@@ -552,7 +668,9 @@
       if (document.activeElement !== refs.notesInput || refs.notesInput.value !== notesValue) {
         refs.notesInput.value = notesValue;
       }
-      refs.notesMeta.textContent = notesValue.trim().length ? 'Note saved locally' : 'Saved locally';
+      if (!refs.notesMeta.classList.contains('is-saving')) {
+        refs.notesMeta.textContent = notesValue.trim().length ? 'Notes saved' : 'Saved';
+      }
 
       if (!state.compareYearA) {
         state.compareYearA = clampYear(year);
@@ -634,14 +752,37 @@
         refs.searchInput.focus();
       });
 
+      const mobileFiltersBtn = document.getElementById('mobile-filters-btn');
+      const filtersGroup = document.getElementById('filters-group');
+      const filtersCloseBtn = document.getElementById('filters-close-btn');
+      const filtersBackdrop = document.getElementById('filters-backdrop');
+
+      function openFilters() {
+        filtersGroup?.classList.add('open');
+        filtersBackdrop?.classList.add('show');
+        filtersBackdrop?.removeAttribute('hidden');
+      }
+
+      function closeFilters() {
+        filtersGroup?.classList.remove('open');
+        filtersBackdrop?.classList.remove('show');
+        filtersBackdrop?.setAttribute('hidden', 'true');
+      }
+
+      mobileFiltersBtn?.addEventListener('click', openFilters);
+      filtersCloseBtn?.addEventListener('click', closeFilters);
+      filtersBackdrop?.addEventListener('click', closeFilters);
+
       refs.phaseFilter.addEventListener('change', () => {
         state.phaseFilter = refs.phaseFilter.value || 'all';
         persistAndRender();
+        closeFilters();
       });
 
       refs.importantToggle.addEventListener('change', () => {
         state.importantOnly = refs.importantToggle.checked;
         persistAndRender();
+        closeFilters();
       });
 
       refs.quizCategory.addEventListener('change', () => {
@@ -649,6 +790,7 @@
           actions.setQuizCategory(refs.quizCategory.value);
         }
         persistAndRender();
+        closeFilters();
       });
 
       refs.compareYearA.addEventListener('change', () => {
@@ -668,10 +810,22 @@
         persistAndRender();
       });
 
+      let saveTimeout = null;
       refs.notesInput.addEventListener('input', () => {
         const yearKey = String(clampYear(state.year));
         if (!state.notes) state.notes = {};
         state.notes[yearKey] = refs.notesInput.value;
+
+        // Visual saving pulsing indicator
+        refs.notesMeta.classList.add('is-saving');
+        refs.notesMeta.textContent = 'Saving...';
+
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          refs.notesMeta.classList.remove('is-saving');
+          refs.notesMeta.textContent = 'Notes saved';
+        }, 650);
+
         persistAndRender();
       });
 
@@ -692,15 +846,27 @@
       });
 
       refs.prevBtn.addEventListener('click', () => {
-        actions.setYear(findPreviousSessionYear(state.year));
+        actions.stepYear(-1);
       });
 
       refs.nextBtn.addEventListener('click', () => {
-        actions.setYear(findNextSessionYear(state.year));
+        actions.stepYear(1);
       });
 
       refs.playBtn.addEventListener('click', () => {
         actions.togglePlaying();
+      });
+
+      refs.quizBtn?.addEventListener('click', () => {
+        actions.openQuiz();
+      });
+
+      refs.mapQuizBtn?.addEventListener('click', () => {
+        actions.openQuiz();
+      });
+
+      refs.bookmarksBtn?.addEventListener('click', () => {
+        actions.openBookmarks();
       });
 
       refs.sliderInput.addEventListener('input', () => {
@@ -709,6 +875,14 @@
 
       refs.drawerToggle?.addEventListener('click', () => {
         actions.toggleDrawer();
+      });
+
+      refs.fcClose?.addEventListener('click', () => {
+        actions.toggleDrawer(false);
+      });
+
+      refs.drawerBackdrop?.addEventListener('click', () => {
+        actions.toggleDrawer(false);
       });
 
       document.addEventListener('keydown', (e) => {

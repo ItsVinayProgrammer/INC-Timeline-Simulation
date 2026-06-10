@@ -240,9 +240,11 @@
       sliderShell: getEl('sl-outer'),
       eraTicks: getEl('era-ticks'),
       eraBands: getEl('era-bands'),
+      milestoneMarkers: getEl('milestone-markers'),
       prevBtn: getEl('prev-btn'),
       playBtn: getEl('play-btn'),
       nextBtn: getEl('next-btn'),
+      playbackYear: getEl('playback-year'),
       eraBadge: getEl('era-badge'),
       eraDot: getEl('era-dot'),
       eraBadgeText: getEl('era-badge-txt'),
@@ -274,6 +276,11 @@
       zoomOut: getEl('zoom-out'),
       zoomReset: getEl('zoom-reset'),
       legend: getEl('legend'),
+
+      quizBtn: getEl('quiz-btn'),
+      mapQuizBtn: getEl('map-quiz-btn'),
+      bookmarksBtn: getEl('bookmarks-btn'),
+      bookmarksPanel: getEl('bookmarks-panel'),
       quizWrap: getEl('quiz-wrap'),
       openQuiz: getEl('open-quiz'),
       quizClose: getEl('quiz-close'),
@@ -288,6 +295,8 @@
       statusBar: getEl('status-bar'),
       drawerToggle: getEl('drawer-toggle'),
       fcPanel: getEl('fc-panel'),
+      drawerBackdrop: getEl('drawer-backdrop'),
+      fcClose: getEl('fc-close'),
     };
 
     let timelineController = null;
@@ -309,8 +318,36 @@
       state.playing = false;
     }
 
+    function getFilteredSessionYears() {
+      const query = String(state.searchQuery || '').trim().toLowerCase();
+      const phase = state.phaseFilter || 'all';
+      const important = Boolean(state.importantOnly);
+      
+      const matches = (session) => {
+        if (phase !== 'all' && session.phase !== phase) return false;
+        if (important && !Data.IMPORTANT_YEARS?.has(session.y)) return false;
+        if (!query) return true;
+        
+        const evText = Array.isArray(session.ev) ? session.ev.join(' ') : '';
+        const phaseLabel = Data.PHASES?.[session.phase]?.label || session.phase || '';
+        const searchText = [
+          session.y,
+          session.city,
+          session.president,
+          phaseLabel,
+          evText,
+          session.desc
+        ].join(' ').toLowerCase();
+        
+        return searchText.includes(query);
+      };
+
+      const filtered = (Data.INC || []).filter(matches).map(s => s.y);
+      return filtered.length ? filtered.sort((a,b) => a - b) : Data.SESSION_YEARS || [];
+    }
+
     function nextSessionYear(year) {
-      const sessions = Data.SESSION_YEARS || [];
+      const sessions = getFilteredSessionYears();
       const currentYear = clampYear(year);
       for (const sessionYear of sessions) {
         if (sessionYear > currentYear) return sessionYear;
@@ -319,9 +356,9 @@
     }
 
     function previousSessionYear(year) {
-      const sessions = Data.SESSION_YEARS || [];
+      const sessions = getFilteredSessionYears();
       const currentYear = clampYear(year);
-      let previous = sessions[0] || currentYear;
+      let previous = sessions[sessions.length - 1] || currentYear;
       for (const sessionYear of sessions) {
         if (sessionYear >= currentYear) break;
         previous = sessionYear;
@@ -400,7 +437,7 @@
     }
 
     function toggleDrawer(forceValue) {
-      state.drawerOpen = forceValue !== undefined ? forceValue : !state.drawerOpen;
+      state.drawerOpen = typeof forceValue === 'boolean' ? forceValue : !state.drawerOpen;
       persist();
       requestRender();
     }
@@ -529,6 +566,29 @@
       persist,
       requestRender,
       announce,
+      openQuiz() {
+        state.drawerOpen = true;
+        if (quizController?.openQuiz) {
+          quizController.openQuiz();
+        }
+        persist();
+        requestRender();
+      },
+      openBookmarks() {
+        state.drawerOpen = true;
+        const bookmarksPanel = getEl('bookmarks-panel');
+        if (bookmarksPanel) {
+          bookmarksPanel.open = true;
+          bookmarksPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        const otherIds = ['search-panel', 'compare-panel', 'notes-panel', 'dashboard-panel', 'sources-panel'];
+        for (const id of otherIds) {
+          const el = getEl(id);
+          if (el) el.open = false;
+        }
+        persist();
+        requestRender();
+      },
       stepYear(direction) {
         if (direction > 0) {
           setYear(nextSessionYear(state.year));
@@ -558,7 +618,7 @@
       state.quiz = normalizeQuizState(state.quiz);
       state.quiz.category = VALID_QUIZ_CATEGORIES.has(state.quiz.category) ? state.quiz.category : 'presidents';
       state.quiz.open = Boolean(state.quiz.open);
-      state.drawerOpen = Boolean(state.drawerOpen);
+      state.drawerOpen = false;
       state.playing = false;
       state.uiMessage = '';
       updateDocumentTheme();
