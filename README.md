@@ -6,6 +6,9 @@ An interactive educational website helping students learn about the Indian Natio
 
 This is a **government-education style web application** designed for students, teachers, and general learners. It provides an immersive way to explore the INC timeline from its founding in 1885 to Indian independence in 1947.
 
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/1730c53b-6795-411b-8ed9-1723b6f59cf5" />
+
+
 ### Key Features
 
 **Timeline Navigation**
@@ -183,21 +186,12 @@ Quiz generation is in `quiz.js`. Modify `makeQuestion()` to add custom question 
 - Screen reader friendly
 
 ## Known Limitations
-
+- Dark mode theme optimizations are still in progress.
 - Map requires JavaScript (no fallback for JS-disabled browsers)
 - Geographic data only covers India's current borders
 - Historical data focuses on major sessions (95 recorded sessions)
 - Quiz questions are generated dynamically (limited by data pool)
 
-## Future Enhancements
-
-- Add more detailed biographies of INC presidents
-- Expand geographic visualization with state-specific histories
-- Add multimedia (images, videos of sessions)
-- Implement multiplayer quiz challenges
-- Add PDF export for study materials
-- Implement spaced repetition for notes
-- Add voice narration of key events
 
 ## Sources & References
 
@@ -219,20 +213,6 @@ To contribute improvements:
 4. Keep the government-education style
 5. Ensure mobile responsiveness
 6. Test accessibility
-
-## License
-
-This educational resource is provided as-is for learning purposes.
-
-## Support
-
-For issues, questions, or suggestions:
-- Check the **search functionality** - it searches all data
-- Review the **quiz feedback** - it explains answers
-- Use the **progress dashboard** to track learning
-- Take **notes** for revision
-
----
 
 **Last Updated**: June 2026
 **Version**: 1.0
